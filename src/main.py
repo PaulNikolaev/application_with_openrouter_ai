@@ -13,13 +13,13 @@ from datetime import datetime
 
 import flet as ft
 
-from api.openrouter import OpenRouterClient
-from ui.components import MessageBubble, ModelSelector
-from ui.styles import AppStyles
-from utils.analytics import Analytics
-from utils.cache import ChatCache
-from utils.logger import AppLogger
-from utils.monitor import PerformanceMonitor
+from src.api.openrouter import OpenRouterClient
+from src.ui.components import MessageBubble, ModelSelector
+from src.ui.styles import AppStyles
+from src.utils.analytics import Analytics
+from src.utils.cache import ChatCache
+from src.utils.logger import AppLogger
+from src.utils.monitor import PerformanceMonitor
 
 
 class ChatApp:
@@ -472,7 +472,8 @@ def main():
     Creates ChatApp instance and launches the Flet application.
     """
     app = ChatApp()
-    ft.app(target=app.main)
+    # Explicitly set view to app for desktop window
+    ft.app(target=app.main, view=ft.AppView.FLET_APP)
 
 
 if __name__ == "__main__":

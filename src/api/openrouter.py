@@ -10,7 +10,7 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from utils.logger import AppLogger
+from src.utils.logger import AppLogger
 
 # Load environment variables from .env file on module import
 load_dotenv()

@@ -9,8 +9,8 @@ import asyncio
 
 import flet as ft
 
-from api import OpenRouterClient
-from ui import MessageBubble
+from src.api import OpenRouterClient
+from src.ui import MessageBubble
 
 
 class SimpleChatApp:
@@ -155,4 +155,5 @@ class SimpleChatApp:
 
 if __name__ == "__main__":
     app = SimpleChatApp()
-    ft.app(target=app.main)
+    # Explicitly set view to app for desktop window
+    ft.app(target=app.main, view=ft.AppView.FLET_APP)

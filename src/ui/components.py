@@ -8,7 +8,7 @@ import asyncio
 
 import flet as ft
 
-from ui.styles import AppStyles
+from src.ui.styles import AppStyles
 
 
 class MessageBubble(ft.Container):
