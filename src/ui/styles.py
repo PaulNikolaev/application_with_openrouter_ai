@@ -190,6 +190,60 @@ class AppStyles:
         "border": ft.border.all(1, ft.Colors.GREY_700),
     }
 
+    LOGIN_WINDOW = {
+        "padding": 30,
+        "width": 500,
+        "bgcolor": ft.Colors.GREY_900,
+        "border_radius": 10,
+        "border": ft.border.all(1, ft.Colors.GREY_700),
+    }
+
+    API_KEY_INPUT = {
+        "label": "API Key",
+        "hint_text": "Введите ключ OpenRouter API",
+        "password": True,
+        "width": 400,
+        "bgcolor": ft.Colors.GREY_800,
+        "color": ft.Colors.WHITE,
+        "border_color": ft.Colors.GREY_700,
+        "focused_border_color": ft.Colors.BLUE_400,
+        "border_radius": 8,
+        "content_padding": 10,
+    }
+
+    PIN_INPUT = {
+        "label": "PIN",
+        "hint_text": "Введите 4-значный PIN",
+        "password": True,
+        "width": 200,
+        "max_length": 4,
+        "bgcolor": ft.Colors.GREY_800,
+        "color": ft.Colors.WHITE,
+        "border_color": ft.Colors.GREY_700,
+        "focused_border_color": ft.Colors.BLUE_400,
+        "border_radius": 8,
+        "content_padding": 10,
+    }
+
+    LOGIN_BUTTON = {
+        "text": "Войти",
+        "icon": ft.icons.LOGIN,
+        "width": 150,
+        "style": ft.ButtonStyle(
+            color=ft.Colors.WHITE,
+            bgcolor=ft.Colors.BLUE_700,
+            padding=10,
+        ),
+    }
+
+    RESET_BUTTON = {
+        "text": "Сбросить ключ",
+        "icon": ft.icons.RESTART_ALT,
+        "style": ft.ButtonStyle(
+            color=ft.Colors.WHITE,
+        ),
+    }
+
     @staticmethod
     def set_window_size(page: ft.Page):
         """
