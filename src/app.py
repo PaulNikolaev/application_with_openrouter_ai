@@ -37,7 +37,8 @@ class ChatApp:
         cache (ChatCache): Chat history cache instance.
         logger (AppLogger): Application logger instance.
         analytics (Analytics): Analytics tracking instance.
-        monitor (PerformanceMonitor): Performance monitoring instance.
+        monitor (PerformanceMonitor or None): Performance monitoring instance.
+            None if initialization failed or on platforms without psutil support.
         auth_manager (AuthManager): Authentication manager instance.
         balance_text (ft.Text): Balance display text component.
         exports_dir (str): Directory path for exported chat history.
@@ -56,7 +57,14 @@ class ChatApp:
         self.cache = ChatCache()
         self.logger = AppLogger()
         self.analytics = Analytics(self.cache)
-        self.monitor = PerformanceMonitor()
+        
+        # Initialize performance monitor with error handling
+        try:
+            self.monitor = PerformanceMonitor()
+        except Exception as e:
+            # Fallback if PerformanceMonitor initialization fails
+            self.logger.warning(f"Failed to initialize PerformanceMonitor: {e}")
+            self.monitor = None
 
         # Initialize authentication
         auth_storage = AuthStorage(self.cache)
@@ -237,8 +245,13 @@ class ChatApp:
                     tokens_used=tokens_used
                 )
 
-                # Log performance metrics
-                self.monitor.log_metrics(self.logger)
+                # Log performance metrics (if monitor is available)
+                if self.monitor is not None:
+                    try:
+                        self.monitor.log_metrics(self.logger)
+                    except Exception as e:
+                        self.logger.warning(f"Failed to log performance metrics: {e}")
+                
                 page.update()
 
             except Exception as e:
@@ -524,8 +537,12 @@ class ChatApp:
         # Add main column to page
         page.add(self.main_column)
 
-        # Initialize monitor
-        self.monitor.get_metrics()
+        # Initialize monitor (if available)
+        if self.monitor is not None:
+            try:
+                self.monitor.get_metrics()
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize monitor metrics: {e}")
 
         # Log application start
         self.logger.info("Приложение запущено")
