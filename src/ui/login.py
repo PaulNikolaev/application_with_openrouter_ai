@@ -11,12 +11,13 @@ class LoginWindow:
     """
     Login window component for authentication.
 
-    Provides UI for entering API key (first-time login) or PIN code
-    (subsequent logins) with buttons for login and reset functionality.
+    Provides UI for entering API key (first-time login) or both PIN code
+    and API key (subsequent logins) with buttons for login and reset functionality.
+    On subsequent logins, user can authenticate using either PIN or API key.
 
     Attributes:
-        api_key_input (ft.TextField): Input field for API key.
-        pin_input (ft.TextField): Input field for PIN code.
+        api_key_input (ft.TextField): Input field for API key (always visible).
+        pin_input (ft.TextField): Input field for PIN code (visible on subsequent logins).
         status_text (ft.Text): Status/error message display.
         login_button (ft.ElevatedButton): Button to submit login.
         reset_button (ft.TextButton): Button to reset authentication.
@@ -27,21 +28,22 @@ class LoginWindow:
         Initialize login window component.
 
         Args:
-            is_first_login (bool): If True, shows API key input.
-                If False, shows PIN input. Defaults to True.
+            is_first_login (bool): If True, shows only API key input.
+                If False, shows both PIN and API key inputs. Defaults to True.
         """
         self.is_first_login = is_first_login
 
-        # Create API key input field (visible on first login)
+        # Create API key input field (always visible)
         self.api_key_input = ft.TextField(
             label="API Key",
             hint_text="Введите ключ OpenRouter API",
             password=True,
             width=400,
             expand=False,
+            visible=True,  # Always visible
         )
 
-        # Create PIN input field (visible on subsequent logins)
+        # Create PIN input field (visible when auth data exists)
         self.pin_input = ft.TextField(
             label="PIN",
             hint_text="Введите 4-значный PIN",
@@ -49,6 +51,7 @@ class LoginWindow:
             width=200,
             expand=False,
             max_length=4,
+            visible=not is_first_login,  # Visible when not first login
         )
 
         # Status/error message display
@@ -83,36 +86,59 @@ class LoginWindow:
         Returns:
             ft.Container: Container with login form.
         """
-        # Determine which input field to show
+        # Determine title and which fields to show
         if self.is_first_login:
-            input_field = self.api_key_input
             title_text = "Первичная авторизация"
+            # Only API key on first login
+            input_fields = [self.api_key_input]
+            divider_text = None
         else:
-            input_field = self.pin_input
-            title_text = "Вход по PIN"
+            title_text = "Вход в приложение"
+            # Both PIN and API key on subsequent logins
+            input_fields = [self.pin_input, self.api_key_input]
+            divider_text = ft.Text(
+                value="Или",
+                size=14,
+                color=ft.Colors.GREY_500,
+                text_align=ft.TextAlign.CENTER,
+            )
+
+        controls_list = [
+            ft.Text(
+                value=title_text,
+                size=24,
+                weight=ft.FontWeight.BOLD,
+                text_align=ft.TextAlign.CENTER,
+            ),
+            ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
+        ]
+
+        # Add input fields
+        for i, field in enumerate(input_fields):
+            controls_list.append(field)
+            # Add "Или" divider between PIN and API key
+            if not self.is_first_login and i == 0 and divider_text:
+                controls_list.extend([
+                    ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
+                    divider_text,
+                ])
+            controls_list.append(ft.Divider(height=10, color=ft.Colors.TRANSPARENT))
+
+        controls_list.extend([
+            self.status_text,
+            ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
+            ft.Row(
+                controls=[
+                    self.login_button,
+                    self.reset_button,
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=20,
+            ),
+        ])
 
         content = ft.Column(
-            controls=[
-                ft.Text(
-                    value=title_text,
-                    size=24,
-                    weight=ft.FontWeight.BOLD,
-                    text_align=ft.TextAlign.CENTER,
-                ),
-                ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
-                input_field,
-                ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
-                self.status_text,
-                ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
-                ft.Row(
-                    controls=[
-                        self.login_button,
-                        self.reset_button,
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    spacing=20,
-                ),
-            ],
+            controls=controls_list,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0,
         )

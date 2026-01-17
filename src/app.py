@@ -552,9 +552,12 @@ class ChatApp:
             """Handle login button click."""
             login_window.clear_status()
 
+            pin = login_window.get_pin()
+            api_key = login_window.get_api_key()
+
+            # Determine which authentication method to use
             if is_first_login:
-                # First-time login with API key
-                api_key = login_window.get_api_key()
+                # First-time login: only API key is available
                 if not api_key:
                     login_window.show_status("Введите API ключ", is_error=True)
                     page.update()
@@ -579,21 +582,45 @@ class ChatApp:
                     login_window.show_status(message, is_error=True)
                     page.update()
             else:
-                # PIN-based login
-                pin = login_window.get_pin()
-                if not pin or len(pin) != 4:
-                    login_window.show_status("Введите 4-значный PIN", is_error=True)
-                    page.update()
-                    return
+                # Subsequent login: can use either PIN or API key
+                if pin and len(pin) == 4:
+                    # Try PIN login first
+                    success, api_key_result, _ = self.auth_manager.handle_pin_login(pin)
+                    if success:
+                        self.is_authenticated = True
+                        self._initialize_api_client()
+                        page.controls.clear()
+                        self._setup_main_ui(page)
+                        return
+                    else:
+                        login_window.show_status("Неверный PIN", is_error=True)
+                        page.update()
+                        return
+                elif api_key:
+                    # Try API key login
+                    success, message, balance = self.auth_manager.handle_api_key_login(api_key)
+                    if success:
+                        login_window.show_status(
+                            f"Вход выполнен. {message}. Баланс: {balance}",
+                            is_error=False
+                        )
+                        page.update()
 
-                success, api_key, _ = self.auth_manager.handle_pin_login(pin)
-                if success:
-                    self.is_authenticated = True
-                    self._initialize_api_client()
-                    page.controls.clear()
-                    self._setup_main_ui(page)
+                        # Wait a bit, then initialize and show main UI
+                        await asyncio.sleep(1.5)
+                        self.is_authenticated = True
+                        self._initialize_api_client()
+                        page.controls.clear()
+                        self._setup_main_ui(page)
+                    else:
+                        login_window.show_status(message, is_error=True)
+                        page.update()
                 else:
-                    login_window.show_status("Неверный PIN", is_error=True)
+                    # Neither field is filled
+                    login_window.show_status(
+                        "Введите PIN (4 цифры) или API ключ",
+                        is_error=True
+                    )
                     page.update()
 
         async def handle_reset(e):

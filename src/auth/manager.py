@@ -97,6 +97,61 @@ class AuthManager:
 
         return (False, "Authentication data not found", "")
 
+    def handle_api_key_login(self, api_key: str) -> tuple[bool, str, str]:
+        """
+        Handle login using API key (can be used even if auth data exists).
+
+        Validates API key, checks balance, and updates stored credentials
+        if authentication data already exists.
+
+        Args:
+            api_key (str): OpenRouter API key to validate.
+
+        Returns:
+            tuple[bool, str, str]: Tuple containing:
+                - bool: True if login successful, False otherwise
+                - str: Success message or error message
+                - str: Balance string or empty string
+        """
+        # Validate API key
+        is_valid, balance_msg, balance_value = self.validator.validate_api_key(api_key)
+
+        if not is_valid:
+            return (False, balance_msg, "")
+
+        # Check if balance is positive
+        if balance_value <= 0:
+            return (False, "API key has no available balance", "")
+
+        # Check if auth data already exists
+        has_existing = self.storage.has_auth()
+
+        if has_existing:
+            # Update existing auth data with new API key
+            # Keep existing PIN hash or generate new PIN
+            auth_data = self.storage.get_auth()
+            if auth_data and 'pin_hash' in auth_data:
+                # Keep existing PIN
+                pin_hash = auth_data['pin_hash']
+            else:
+                # Generate new PIN if somehow missing
+                pin = self.validator.generate_pin()
+                pin_hash = self.validator.hash_pin(pin)
+        else:
+            # Generate new PIN for first-time setup
+            pin = self.validator.generate_pin()
+            pin_hash = self.validator.hash_pin(pin)
+
+        # Save or update authentication data
+        if self.storage.save_auth(api_key, pin_hash):
+            if has_existing:
+                return (True, "API key updated successfully", balance_msg)
+            else:
+                # Return generated PIN for first-time setup
+                return (True, pin, balance_msg)
+
+        return (False, "Failed to save authentication data", "")
+
     def handle_reset(self) -> bool:
         """
         Reset authentication by clearing stored data.
