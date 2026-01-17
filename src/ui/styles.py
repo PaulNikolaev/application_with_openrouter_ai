@@ -118,6 +118,19 @@ class AppStyles:
         "height": 40,
     }
 
+    LOGOUT_BUTTON = {
+        "text": "Выйти",
+        "icon": ft.icons.LOGOUT,
+        "style": ft.ButtonStyle(
+            color=ft.Colors.WHITE,
+            bgcolor=ft.Colors.ORANGE_700,
+            padding=10,
+        ),
+        "tooltip": "Выйти из приложения",
+        "width": 130,
+        "height": 40,
+    }
+
     INPUT_ROW = {
         "spacing": 10,
         "alignment": ft.MainAxisAlignment.SPACE_BETWEEN,

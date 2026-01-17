@@ -443,12 +443,30 @@ class ChatApp:
             **AppStyles.ANALYTICS_BUTTON
         )
 
+        async def handle_logout(e):
+            """
+            Handle logout button click.
+
+            Resets authentication state and returns to PIN login window.
+            Does not clear stored authentication data.
+            """
+            self.is_authenticated = False
+            self.api_client = None
+            page.controls.clear()
+            self._show_login_window(page)
+
+        logout_button = ft.ElevatedButton(
+            on_click=handle_logout,
+            **AppStyles.LOGOUT_BUTTON
+        )
+
         # Create layout components
         control_buttons = ft.Row(
             controls=[
                 save_button,
                 analytics_button,
-                clear_button
+                clear_button,
+                logout_button
             ],
             **AppStyles.CONTROL_BUTTONS_ROW
         )
