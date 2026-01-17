@@ -14,7 +14,9 @@ from datetime import datetime
 import flet as ft
 
 from src.api.openrouter import OpenRouterClient
+from src.auth import AuthManager, AuthStorage
 from src.ui.components import MessageBubble, ModelSelector
+from src.ui.login import LoginWindow
 from src.ui.styles import AppStyles
 from src.utils.analytics import Analytics
 from src.utils.cache import ChatCache
@@ -36,29 +38,39 @@ class ChatApp:
         logger (AppLogger): Application logger instance.
         analytics (Analytics): Analytics tracking instance.
         monitor (PerformanceMonitor): Performance monitoring instance.
+        auth_manager (AuthManager): Authentication manager instance.
         balance_text (ft.Text): Balance display text component.
         exports_dir (str): Directory path for exported chat history.
+        is_authenticated (bool): Authentication state flag.
     """
 
     def __init__(self):
         """
         Initialize main application components.
 
-        Sets up API client, cache, logger, analytics, monitor, balance display,
-        and exports directory.
+        Sets up cache, logger, analytics, monitor, authentication manager,
+        and exports directory. OpenRouterClient is initialized only after
+        successful authentication.
         """
-        self.api_client = OpenRouterClient()
+        # Initialize core components (no API client yet)
         self.cache = ChatCache()
         self.logger = AppLogger()
         self.analytics = Analytics(self.cache)
         self.monitor = PerformanceMonitor()
+
+        # Initialize authentication
+        auth_storage = AuthStorage(self.cache)
+        self.auth_manager = AuthManager(auth_storage)
+        self.is_authenticated = self.auth_manager.is_authenticated()
+
+        # API client will be initialized after authentication
+        self.api_client = None
 
         # Create balance display component
         self.balance_text = ft.Text(
             "Баланс: Загрузка...",
             **AppStyles.BALANCE_TEXT
         )
-        self.update_balance()
 
         # Create exports directory
         self.exports_dir = "exports"
@@ -95,6 +107,8 @@ class ChatApp:
         Fetches balance from API and updates display. Shows balance in green
         on success, or 'н/д' (not available) in red on error.
         """
+        if not self.api_client:
+            return
         try:
             balance = self.api_client.get_balance()
             self.balance_text.value = f"Баланс: {balance}"
@@ -120,10 +134,33 @@ class ChatApp:
 
         AppStyles.set_window_size(page)
 
+        # Check authentication and show login if needed
+        if not self.is_authenticated:
+            self._show_login_window(page)
+            return
+
+        # Initialize API client with stored key if not already initialized
+        if not self.api_client:
+            self._initialize_api_client()
+
+        # Continue with main application setup
+        self._setup_main_ui(page)
+
+    def _setup_main_ui(self, page: ft.Page):
+        """
+        Set up main application UI.
+
+        Creates and displays all main application components including
+        model selector, chat history, input fields, and control buttons.
+
+        Args:
+            page (ft.Page): Flet page instance.
+        """
         # Initialize model selector dropdown
-        models = self.api_client.available_models
-        self.model_dropdown = ModelSelector(models)
-        self.model_dropdown.value = models[0]['id'] if models else None
+        if self.api_client:
+            models = self.api_client.available_models
+            self.model_dropdown = ModelSelector(models)
+            self.model_dropdown.value = models[0]['id'] if models else None
 
         async def send_message_click(e):
             """
@@ -463,6 +500,108 @@ class ChatApp:
 
         # Log application start
         self.logger.info("Приложение запущено")
+
+    def _initialize_api_client(self):
+        """
+        Initialize OpenRouterClient with stored API key.
+
+        Retrieves API key from authentication storage and initializes
+        the API client. Updates balance display.
+        """
+        api_key = self.auth_manager.get_stored_api_key()
+        if api_key:
+            # Set API key in environment for OpenRouterClient
+            os.environ["OPENROUTER_API_KEY"] = api_key
+            os.environ["BASE_URL"] = "https://openrouter.ai/api/v1"
+
+            self.api_client = OpenRouterClient()
+            self.update_balance()
+
+    def _show_login_window(self, page: ft.Page):
+        """
+        Display login window for authentication.
+
+        Shows appropriate login form (API key or PIN) based on
+        authentication state and handles login flow.
+
+        Args:
+            page (ft.Page): Flet page instance.
+        """
+        is_first_login = not self.auth_manager.is_authenticated()
+        login_window = LoginWindow(is_first_login=is_first_login)
+
+        async def handle_login(e):
+            """Handle login button click."""
+            login_window.clear_status()
+
+            if is_first_login:
+                # First-time login with API key
+                api_key = login_window.get_api_key()
+                if not api_key:
+                    login_window.show_status("Введите API ключ", is_error=True)
+                    page.update()
+                    return
+
+                success, message, balance = self.auth_manager.handle_first_login(api_key)
+                if success:
+                    # Show generated PIN
+                    login_window.show_status(
+                        f"PIN сгенерирован: {message}. Баланс: {balance}",
+                        is_error=False
+                    )
+                    page.update()
+
+                    # Wait a bit, then initialize and show main UI
+                    await asyncio.sleep(2)
+                    self.is_authenticated = True
+                    self._initialize_api_client()
+                    page.controls.clear()
+                    self._setup_main_ui(page)
+                else:
+                    login_window.show_status(message, is_error=True)
+                    page.update()
+            else:
+                # PIN-based login
+                pin = login_window.get_pin()
+                if not pin or len(pin) != 4:
+                    login_window.show_status("Введите 4-значный PIN", is_error=True)
+                    page.update()
+                    return
+
+                success, api_key, _ = self.auth_manager.handle_pin_login(pin)
+                if success:
+                    self.is_authenticated = True
+                    self._initialize_api_client()
+                    page.controls.clear()
+                    self._setup_main_ui(page)
+                else:
+                    login_window.show_status("Неверный PIN", is_error=True)
+                    page.update()
+
+        async def handle_reset(e):
+            """Handle reset button click."""
+            if self.auth_manager.handle_reset():
+                self.is_authenticated = False
+                page.controls.clear()
+                # Show first-time login window
+                self._show_login_window(page)
+            else:
+                login_window.show_status("Ошибка сброса ключа", is_error=True)
+                page.update()
+
+        # Set up button handlers
+        login_window.login_button.on_click = handle_login
+        login_window.reset_button.on_click = handle_reset
+
+        # Center login window on page
+        page.add(
+            ft.Row(
+                controls=[login_window.container],
+                alignment=ft.MainAxisAlignment.CENTER,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                expand=True,
+            )
+        )
 
 
 def main():
