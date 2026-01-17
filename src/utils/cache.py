@@ -55,9 +55,10 @@ class ChatCache:
         """
         Create necessary database tables.
 
-        Creates two tables:
+        Creates three tables:
         - messages: stores chat messages with metadata
         - analytics_messages: stores analytics data for performance tracking
+        - auth: stores authentication data (API key and PIN hash)
         """
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -81,6 +82,16 @@ class ChatCache:
                 message_length INTEGER,
                 response_time FLOAT,
                 tokens_used INTEGER
+            )
+        ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS auth (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                api_key TEXT NOT NULL,
+                pin_hash TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_used DATETIME
             )
         ''')
 
