@@ -14,79 +14,125 @@ from pathlib import Path
 
 def build_windows():
     """
-    Build Windows executable file using PyInstaller.
+    Build Windows application directory using PyInstaller.
 
     Installs project dependencies, creates output directory, runs PyInstaller
-    with Windows-specific configuration, and moves the resulting executable
-    to the bin directory.
+    with Windows-specific configuration, and moves the resulting application
+    directory to the bin folder.
 
-    The build process creates a single executable file with admin privileges
-    request on launch and no console window.
+    The build process creates a directory with executable and all dependencies
+    with admin privileges request on launch and no console window.
     """
     print("Building Windows executable...")
 
     # Install project dependencies
     subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 
-    # Create output directory if it doesn't exist
-    bin_dir = Path("bin")
-    bin_dir.mkdir(exist_ok=True)
-
     # Run PyInstaller with Windows-specific configuration
     subprocess.run([
         "pyinstaller",
-        "--onefile",
+        "--onedir",
         "--windowed",
-        "--name=AI Chat",
+        "--icon=assets/icon.ico",
+        "--name=AIChat",
         "--clean",
         "--noupx",
         "--uac-admin",
+        "--paths=src",
+        "--add-data=src;src",
+        "--hidden-import=requests",
+        "--hidden-import=flet",
+        "--hidden-import=psutil",
+        "--hidden-import=dotenv",
+        "--hidden-import=python_dotenv",
+        "--hidden-import=asyncio",
+        "--hidden-import=sqlite3",
+        "--hidden-import=hashlib",
+        "--hidden-import=datetime",
+        "--hidden-import=json",
+        "--hidden-import=os",
+        "--hidden-import=sys",
+        "--hidden-import=threading",
+        "--hidden-import=logging",
+        "--hidden-import=time",
+        "--hidden-import=random",
+        "--collect-all=flet",
+        "--collect-submodules=dotenv",
         "src/main.py"
     ])
 
-    # Move built executable to bin directory
+    # Move built directory to root as AIChat/
     try:
-        shutil.move("dist/AI Chat.exe", "bin/AIChat.exe")
-        print("Windows build completed! Executable location: bin/AIChat.exe")
-    except Exception:
-        print("Windows build completed! Executable location: dist/AI Chat.exe")
+        # Remove old AIChat directory if exists
+        output_dir = Path("AIChat")
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        # Move new directory from dist to root
+        shutil.move("dist/AIChat", "AIChat")
+        print("Windows build completed! Executable location: AIChat/AIChat.exe")
+    except Exception as e:
+        print(f"Windows build completed! Executable location: dist/AIChat/AIChat.exe")
+        print(f"Warning: Could not move to AIChat directory: {e}")
 
 
 def build_linux():
     """
-    Build Linux executable file using PyInstaller.
+    Build Linux application directory using PyInstaller.
 
     Installs project dependencies, creates output directory, runs PyInstaller
     with Linux-specific configuration including application icon, and moves
-    the resulting executable to the bin directory.
+    the resulting application directory to the bin folder.
 
-    The build process creates a single executable file without console window.
+    The build process creates a directory with executable and all dependencies
+    without console window.
     """
     print("Building Linux executable...")
 
     # Install project dependencies
     subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 
-    # Create output directory if it doesn't exist
-    bin_dir = Path("bin")
-    bin_dir.mkdir(exist_ok=True)
-
     # Run PyInstaller with Linux-specific configuration
     subprocess.run([
         "pyinstaller",
-        "--onefile",
+        "--onedir",
         "--windowed",
         "--icon=assets/icon.ico",
         "--name=aichat",
+        "--paths=src",
+        "--add-data=src:src",
+        "--hidden-import=requests",
+        "--hidden-import=flet",
+        "--hidden-import=psutil",
+        "--hidden-import=dotenv",
+        "--hidden-import=python_dotenv",
+        "--hidden-import=asyncio",
+        "--hidden-import=sqlite3",
+        "--hidden-import=hashlib",
+        "--hidden-import=datetime",
+        "--hidden-import=json",
+        "--hidden-import=os",
+        "--hidden-import=sys",
+        "--hidden-import=threading",
+        "--hidden-import=logging",
+        "--hidden-import=time",
+        "--hidden-import=random",
+        "--collect-all=flet",
+        "--collect-submodules=dotenv",
         "src/main.py"
     ])
 
-    # Move built executable to bin directory
+    # Move built directory to root as AIChat/
     try:
-        shutil.move("dist/aichat", "bin/aichat")
-        print("Linux build completed! Executable location: bin/aichat")
-    except Exception:
-        print("Linux build completed! Executable location: dist/aichat")
+        # Remove old AIChat directory if exists
+        output_dir = Path("AIChat")
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        # Move new directory from dist to root and rename
+        shutil.move("dist/aichat", "AIChat")
+        print("Linux build completed! Executable location: AIChat/aichat")
+    except Exception as e:
+        print(f"Linux build completed! Executable location: dist/aichat/aichat")
+        print(f"Warning: Could not move to AIChat directory: {e}")
 
 
 def main():

@@ -68,7 +68,8 @@ pip install -r requirements.txt
 ```cmd
 python build.py
 ```
-3. Исполняемый файл будет создан в директории `bin/AIChat.exe`
+3. Все файлы приложения будут созданы в директории `AIChat/` в корне проекта
+4. Исполняемый файл: `AIChat/AIChat.exe`
 
 ### Linux
 
@@ -77,10 +78,11 @@ python build.py
 ```bash
 python3 build.py
 ```
-3. Исполняемый файл будет создан в директории `bin/aichat`
-4. Сделайте файл исполняемым:
+3. Все файлы приложения будут созданы в директории `AIChat/` в корне проекта
+4. Исполняемый файл: `AIChat/aichat`
+5. Сделайте файл исполняемым:
 ```bash
-chmod +x bin/aichat
+chmod +x AIChat/aichat
 ```
 
 ## Примечания
