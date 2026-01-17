@@ -5,6 +5,7 @@ This module provides SQLite-based caching for chat history and analytics data.
 It ensures thread-safe database operations and provides methods for storing,
 retrieving, and managing chat messages and analytics records.
 """
+import hashlib
 import sqlite3
 import threading
 from datetime import datetime
@@ -315,3 +316,61 @@ class ChatCache:
             return None
         except Exception:
             return None
+
+    def verify_pin(self, pin: str) -> bool:
+        """
+        Verify PIN code against stored hash.
+
+        Args:
+            pin (str): PIN code to verify.
+
+        Returns:
+            bool: True if PIN is valid, False otherwise.
+        """
+        try:
+            auth_data = self.get_auth_data()
+            if not auth_data or 'pin_hash' not in auth_data:
+                return False
+
+            stored_hash = auth_data['pin_hash']
+            input_hash = hashlib.sha256(pin.encode()).hexdigest()
+
+            return input_hash == stored_hash
+        except Exception:
+            return False
+
+    def clear_auth_data(self) -> bool:
+        """
+        Clear authentication data from database.
+
+        Deletes all records from the auth table.
+
+        Returns:
+            bool: True if cleared successfully, False otherwise.
+        """
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM auth')
+            conn.commit()
+            return True
+        except Exception:
+            return False
+
+    def has_auth_data(self) -> bool:
+        """
+        Check if authentication data exists in database.
+
+        Returns:
+            bool: True if auth data exists, False otherwise.
+        """
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute('SELECT COUNT(*) FROM auth')
+            count = cursor.fetchone()[0]
+
+            return count > 0
+        except Exception:
+            return False
