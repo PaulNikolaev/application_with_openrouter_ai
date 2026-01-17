@@ -240,3 +240,78 @@ class ChatCache:
                 "tokens_used": row[5]
             })
         return history
+
+    def save_auth_data(self, api_key: str, pin_hash: str) -> bool:
+        """
+        Save authentication data to database.
+
+        If auth data already exists, it will be updated (replaced).
+        Otherwise, a new record will be created.
+
+        Args:
+            api_key (str): OpenRouter API key to store.
+            pin_hash (str): Hashed PIN code to store.
+
+        Returns:
+            bool: True if saved successfully, False otherwise.
+        """
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            # Check if auth data already exists
+            cursor.execute('SELECT id FROM auth LIMIT 1')
+            existing = cursor.fetchone()
+
+            if existing:
+                # Update existing record
+                cursor.execute('''
+                    UPDATE auth 
+                    SET api_key = ?, pin_hash = ?, last_used = ?
+                    WHERE id = ?
+                ''', (api_key, pin_hash, datetime.now(), existing[0]))
+            else:
+                # Insert new record
+                cursor.execute('''
+                    INSERT INTO auth (api_key, pin_hash, created_at, last_used)
+                    VALUES (?, ?, ?, ?)
+                ''', (api_key, pin_hash, datetime.now(), datetime.now()))
+
+            conn.commit()
+            return True
+        except Exception:
+            return False
+
+    def get_auth_data(self) -> dict:
+        """
+        Retrieve authentication data from database.
+
+        Returns:
+            dict: Dictionary containing 'api_key' and 'pin_hash',
+                or None if no auth data exists.
+        """
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                SELECT api_key, pin_hash, created_at, last_used
+                FROM auth
+                LIMIT 1
+            ''')
+
+            row = cursor.fetchone()
+            if row:
+                # Update last_used timestamp
+                cursor.execute('UPDATE auth SET last_used = ?', (datetime.now(),))
+                conn.commit()
+
+                return {
+                    'api_key': row[0],
+                    'pin_hash': row[1],
+                    'created_at': row[2],
+                    'last_used': row[3]
+                }
+            return None
+        except Exception:
+            return None
