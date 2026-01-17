@@ -460,15 +460,26 @@ class ChatApp:
             **AppStyles.LOGOUT_BUTTON
         )
 
-        # Create layout components
-        control_buttons = ft.Row(
+        # Create layout components - buttons in 2 rows, 2 buttons each
+        control_buttons = ft.Column(
             controls=[
-                save_button,
-                analytics_button,
-                clear_button,
-                logout_button
+                ft.Row(
+                    controls=[
+                        save_button,
+                        analytics_button,
+                    ],
+                    **AppStyles.CONTROL_BUTTONS_ROW
+                ),
+                ft.Row(
+                    controls=[
+                        clear_button,
+                        logout_button,
+                    ],
+                    **AppStyles.CONTROL_BUTTONS_ROW
+                ),
             ],
-            **AppStyles.CONTROL_BUTTONS_ROW
+            spacing=10,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
         input_row = ft.Row(
