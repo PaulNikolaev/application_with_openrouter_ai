@@ -17,7 +17,7 @@ class ChatCache:
 
     Provides persistent storage for chat messages with metadata including
     model information, timestamps, and token usage. Supports analytics
-    data storage and formatted history retrieval.
+    data storage, formatted history retrieval, and authentication data management.
 
     Attributes:
         db_name (str): SQLite database file name.
