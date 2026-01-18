@@ -4,8 +4,12 @@ UI styles module.
 This module provides centralized style configurations for all UI components
 in the application. Contains constants and configurations for visual elements
 including page settings, chat components, buttons, input fields, and layout elements.
+Adapted for cross-platform compatibility including mobile platforms with responsive
+sizing and layout adjustments.
 """
 import flet as ft
+
+from src.utils.platform import is_mobile
 
 
 class AppStyles:
@@ -260,14 +264,55 @@ class AppStyles:
     @staticmethod
     def set_window_size(page: ft.Page):
         """
-        Set fixed window size for the application.
+        Set window size for the application with platform-specific handling.
 
-        Configures the application window with fixed dimensions and disables
-        resizing by the user.
+        On desktop platforms, configures the application window with fixed dimensions
+        and disables resizing. On mobile platforms, window size is managed by the
+        operating system and no size constraints are applied.
 
         Args:
             page (ft.Page): Flet page instance to configure.
         """
-        page.window.width = 600
-        page.window.height = 800
-        page.window.resizable = False
+        # Only set window size on desktop platforms
+        # Mobile platforms manage window size automatically
+        if not is_mobile():
+            page.window.width = 600
+            page.window.height = 800
+            page.window.resizable = False
+
+    @staticmethod
+    def get_responsive_width(default_width: int) -> int:
+        """
+        Get responsive width value based on platform.
+
+        Returns the default width for desktop platforms, or None for mobile
+        platforms to enable automatic sizing.
+
+        Args:
+            default_width (int): Default width value for desktop platforms.
+
+        Returns:
+            int or None: Width value for desktop, None for mobile (enables auto-sizing).
+        """
+        return default_width if not is_mobile() else None
+
+    @staticmethod
+    def get_input_row_style() -> dict:
+        """
+        Get responsive input row style based on platform.
+
+        Returns style dictionary with fixed width for desktop or expand=True
+        for mobile platforms.
+
+        Returns:
+            dict: Style dictionary for input row.
+        """
+        base_style = {
+            "spacing": 10,
+            "alignment": ft.MainAxisAlignment.SPACE_BETWEEN,
+        }
+        if not is_mobile():
+            base_style["width"] = 920
+        else:
+            base_style["expand"] = True
+        return base_style
