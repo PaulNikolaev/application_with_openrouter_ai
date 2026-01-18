@@ -1,0 +1,27 @@
+# Mobile application dependencies
+# This file contains dependencies required for building mobile applications (Android/iOS)
+# Use this file when building APK/IPA files with Flet: flet build apk/ipa
+
+# Core application framework for building desktop and mobile applications
+flet==0.25.2
+
+# Flet runtime package - required for running Flet applications
+flet-runtime
+
+# Flet builder package - required for building mobile applications (APK/IPA)
+flet-builder
+
+# Environment variables management - loads .env files for configuration
+python-dotenv>=1.0.0
+
+# HTTP library for making API requests to OpenRouter service
+requests>=2.28.0
+
+# Note: psutil is excluded - not available on mobile platforms
+# Performance monitoring uses fallback implementation on mobile (see src/utils/monitor.py)
+
+# Note: pyinstaller is excluded - not used for mobile builds
+# Use 'flet build apk' for Android or 'flet build ipa' for iOS instead
+
+# Note: asyncio is excluded - it's part of Python standard library (Python 3.4+)
+# No need to install separately
