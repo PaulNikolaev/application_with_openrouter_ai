@@ -23,7 +23,7 @@ def build_windows():
     The build process creates a directory with executable and all dependencies
     with admin privileges request on launch and no console window.
     """
-    print("Building Windows executable...")
+    print("Сборка исполняемого файла для Windows...")
 
     # Install project dependencies
     subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
@@ -69,10 +69,10 @@ def build_windows():
             shutil.rmtree(output_dir)
         # Move new directory from dist to root
         shutil.move("dist/AIChat", "AIChat")
-        print("Windows build completed! Executable location: AIChat/AIChat.exe")
+        print("Сборка для Windows завершена! Расположение исполняемого файла: AIChat/AIChat.exe")
     except Exception as e:
-        print(f"Windows build completed! Executable location: dist/AIChat/AIChat.exe")
-        print(f"Warning: Could not move to AIChat directory: {e}")
+        print(f"Сборка для Windows завершена! Расположение исполняемого файла: dist/AIChat/AIChat.exe")
+        print(f"Предупреждение: Не удалось переместить в директорию AIChat: {e}")
 
 
 def build_linux():
@@ -86,7 +86,7 @@ def build_linux():
     The build process creates a directory with executable and all dependencies
     without console window.
     """
-    print("Building Linux executable...")
+    print("Сборка исполняемого файла для Linux...")
 
     # Install project dependencies
     subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
@@ -129,10 +129,10 @@ def build_linux():
             shutil.rmtree(output_dir)
         # Move new directory from dist to root and rename
         shutil.move("dist/aichat", "AIChat")
-        print("Linux build completed! Executable location: AIChat/aichat")
+        print("Сборка для Linux завершена! Расположение исполняемого файла: AIChat/aichat")
     except Exception as e:
-        print(f"Linux build completed! Executable location: dist/aichat/aichat")
-        print(f"Warning: Could not move to AIChat directory: {e}")
+        print(f"Сборка для Linux завершена! Расположение исполняемого файла: dist/aichat/aichat")
+        print(f"Предупреждение: Не удалось переместить в директорию AIChat: {e}")
 
 
 def main():
@@ -149,7 +149,7 @@ def main():
     elif sys.platform.startswith('linux'):
         build_linux()
     else:
-        print("Unsupported platform")
+        print("Неподдерживаемая платформа")
 
 
 if __name__ == "__main__":
