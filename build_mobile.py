@@ -102,10 +102,12 @@ def install_mobile_dependencies() -> bool:
 def build_android_apk(
     project_name: str = "AIChat",
     package_name: str = "com.example.aichat",
+    org: str = None,
     version: str = "1.0.0",
     build_number: int = 1,
     android_min_sdk: int = 21,
-    icon_path: str = None
+    icon_path: str = None,
+    android_permissions: list = None
 ) -> bool:
     """
     Build Android APK file using Flet build tools.
@@ -119,11 +121,15 @@ def build_android_apk(
         project_name (str): Name of the project/application. Defaults to "AIChat".
         package_name (str): Android package name (e.g., com.example.app).
             Defaults to "com.example.aichat".
+        org (str, optional): Organization identifier (e.g., com.example).
+            If None, derived from package_name. Defaults to None.
         version (str): Application version string. Defaults to "1.0.0".
         build_number (int): Build number. Defaults to 1.
         android_min_sdk (int): Minimum Android SDK version. Defaults to 21 (Android 5.0).
         icon_path (str, optional): Path to application icon (PNG format).
             If None, uses default icon. Defaults to None.
+        android_permissions (list, optional): List of Android permissions to request.
+            Defaults to ["INTERNET", "ACCESS_NETWORK_STATE", "WRITE_EXTERNAL_STORAGE"].
 
     Returns:
         bool: True if build succeeded, False otherwise.
@@ -149,6 +155,23 @@ def build_android_apk(
     
     print()
     
+    # Set default Android permissions if not provided
+    if android_permissions is None:
+        android_permissions = [
+            "INTERNET",
+            "ACCESS_NETWORK_STATE",
+            "WRITE_EXTERNAL_STORAGE"
+        ]
+    
+    # Derive organization from package_name if not provided
+    if org is None:
+        # Extract org from package_name (e.g., "com.example" from "com.example.aichat")
+        parts = package_name.split('.')
+        if len(parts) >= 2:
+            org = '.'.join(parts[:-1])
+        else:
+            org = "com.example"
+    
     # Prepare flet build command
     print("Preparing Flet build command...")
     build_command = [
@@ -157,6 +180,7 @@ def build_android_apk(
         "apk",
         "--project-name", project_name,
         "--package-name", package_name,
+        "--org", org,
         "--version", version,
         "--build-number", str(build_number),
         "--android-min-sdk", str(android_min_sdk),
@@ -171,12 +195,21 @@ def build_android_apk(
         else:
             print(f"Warning: Icon file not found: {icon_path}")
     
+    # Add Android permissions
+    if android_permissions:
+        permissions_str = ",".join(android_permissions)
+        build_command.extend(["--android-permissions", permissions_str])
+        print(f"Android permissions: {', '.join(android_permissions)}")
+    
     print()
     print("Starting APK build process...")
     print(f"Project: {project_name}")
     print(f"Package: {package_name}")
+    print(f"Organization: {org}")
     print(f"Version: {version} (build {build_number})")
     print(f"Min SDK: {android_min_sdk}")
+    if android_permissions:
+        print(f"Permissions: {', '.join(android_permissions)}")
     print()
     
     # Execute build command
