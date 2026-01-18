@@ -3,12 +3,17 @@ Chat cache utility module.
 
 This module provides SQLite-based caching for chat history and analytics data.
 It ensures thread-safe database operations and provides methods for storing,
-retrieving, and managing chat messages and analytics records.
+retrieving, and managing chat messages and analytics records. Adapted for
+cross-platform compatibility including mobile platforms with proper database
+file path handling.
 """
 import hashlib
+import os
 import sqlite3
 import threading
 from datetime import datetime
+
+from src.utils.platform import is_mobile
 
 
 class ChatCache:
@@ -20,7 +25,7 @@ class ChatCache:
     data storage, formatted history retrieval, and authentication data management.
 
     Attributes:
-        db_name (str): SQLite database file name.
+        db_path (str): SQLite database file path (platform-specific).
         local (threading.local): Thread-local storage for database connections.
     """
 
@@ -28,15 +33,59 @@ class ChatCache:
         """
         Initialize chat cache system.
 
-        Creates SQLite database file, sets up thread-local connection storage,
-        and creates necessary database tables.
+        Creates SQLite database file with platform-specific path handling,
+        sets up thread-local connection storage, and creates necessary
+        database tables.
+
+        On Android, database is stored in app's internal storage directory.
+        On desktop, database is stored in current working directory.
         """
-        self.db_name = 'chat_cache.db'
+        # Get platform-specific database path
+        self.db_path = self._get_database_path()
 
         # Thread-local storage ensures each thread has its own connection
         self.local = threading.local()
 
         self.create_tables()
+
+    def _get_database_path(self) -> str:
+        """
+        Get platform-specific database file path.
+
+        On mobile platforms (Android/iOS), uses app's internal storage.
+        On desktop platforms, uses current working directory.
+
+        Returns:
+            str: Full path to SQLite database file.
+        """
+        db_filename = 'chat_cache.db'
+        
+        if is_mobile():
+            # On Android, use app's internal storage
+            try:
+                # Try to use Android app data directory
+                android_data = os.environ.get('ANDROID_DATA', '')
+                if android_data:
+                    # Use Android app-specific directory
+                    app_data_dir = os.path.join(
+                        android_data,
+                        'user',
+                        '0',
+                        'com.example.aichat',  # Package name placeholder
+                        'files'
+                    )
+                    # Ensure directory exists
+                    os.makedirs(app_data_dir, exist_ok=True)
+                    return os.path.join(app_data_dir, db_filename)
+                else:
+                    # Fallback: use current directory
+                    return os.path.join(os.getcwd(), db_filename)
+            except Exception:
+                # Ultimate fallback: current directory
+                return os.path.join(os.getcwd(), db_filename)
+        else:
+            # Desktop: use current directory
+            return os.path.join(os.getcwd(), db_filename)
 
     def get_connection(self):
         """
@@ -49,7 +98,7 @@ class ChatCache:
             sqlite3.Connection: Database connection object for current thread.
         """
         if not hasattr(self.local, 'connection'):
-            self.local.connection = sqlite3.connect(self.db_name)
+            self.local.connection = sqlite3.connect(self.db_path)
         return self.local.connection
 
     def create_tables(self):
@@ -61,7 +110,7 @@ class ChatCache:
         - analytics_messages: stores analytics data for performance tracking
         - auth: stores authentication data (API key and PIN hash)
         """
-        conn = sqlite3.connect(self.db_name)
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         cursor.execute('''
