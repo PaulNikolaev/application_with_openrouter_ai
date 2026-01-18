@@ -1,5 +1,8 @@
 # Core application framework for building desktop and mobile applications
-flet==0.25.2
+flet>=0.80.2
+
+# Flet desktop client (required for desktop builds)
+flet-desktop>=0.80.2
 
 # Environment variables management - loads .env files for configuration
 python-dotenv>=1.0.0
@@ -12,6 +15,3 @@ requests>=2.28.0
 
 # System and process utilities for performance monitoring (desktop only)
 psutil>=5.9.0
-
-# Asynchronous I/O library (standard library module, kept for compatibility)
-asyncio>=3.4.3

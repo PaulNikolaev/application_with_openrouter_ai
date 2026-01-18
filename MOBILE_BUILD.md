@@ -5,11 +5,30 @@
 ## Системные требования
 
 - Python 3.8+
+- Flutter SDK (требуется для сборки APK через Flet)
 - Android SDK (API Level 21+)
 - JDK 11+
 - Минимум 5 ГБ свободного места
 
 ## Установка инструментов
+
+### Flutter SDK
+
+1. Скачайте Flutter SDK: https://docs.flutter.dev/get-started/install
+2. Распакуйте архив в желаемую директорию (например, `C:\flutter` на Windows)
+3. Добавьте Flutter в PATH:
+   - **Windows**: Добавьте `<flutter_install_dir>\flutter\bin` в системную переменную PATH
+   - **Linux/macOS**: Добавьте `<flutter_install_dir>/flutter/bin` в PATH (через ~/.bashrc или ~/.zshrc)
+4. Перезапустите терминал
+5. Проверьте установку:
+   ```
+   flutter --version
+   ```
+6. Выполните первую настройку:
+   ```
+   flutter doctor
+   ```
+   Следуйте инструкциям для установки недостающих компонентов
 
 ### Android SDK
 
@@ -59,7 +78,9 @@ pip install -r requirements-mobile.txt
 python build_mobile.py
 ```
 
-APK файл будет находиться по пути: `build/android/app/build/outputs/apk/release/app-release.apk`
+APK файл будет находиться по одному из следующих путей:
+- `build/apk/*.apk` (новая версия Flet 0.80.2+)
+- `build/android/app/build/outputs/apk/release/app-release.apk` (старая версия)
 
 ## Настройка параметров
 
@@ -81,12 +102,17 @@ APK файл будет находиться по пути: `build/android/app/b
 
 Или используйте adb:
 ```
+# Для новой версии Flet (0.80.2+)
+adb install build/apk/*.apk
+
+# Или для старой версии
 adb install build/android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ## Решение проблем
 
+- **Flutter SDK не найден**: Установите Flutter SDK и добавьте в PATH (см. раздел "Установка инструментов")
 - **ANDROID_HOME/JAVA_HOME не найдены**: Проверьте переменные окружения, перезапустите терминал
-- **Команда 'flet' не найдена**: Установите `pip install flet flet-builder`
+- **Команда 'flet' не найдена**: Установите `pip install flet`
 - **Ошибки сборки**: Удалите директорию `build/` и запустите сборку заново
 - **Недостаточно места**: Убедитесь, что доступно минимум 5 ГБ

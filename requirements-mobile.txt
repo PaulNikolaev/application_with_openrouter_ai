@@ -3,13 +3,11 @@
 # Use this file when building APK/IPA files with Flet: flet build apk/ipa
 
 # Core application framework for building desktop and mobile applications
-flet==0.25.2
+flet>=0.80.2
 
-# Flet runtime package - required for running Flet applications
-flet-runtime
-
-# Flet builder package - required for building mobile applications (APK/IPA)
-flet-builder
+# Flet runtime package - optional, may be included in flet package
+# Note: In Flet 0.80.2+, runtime components are typically included in main flet package
+# flet-runtime  # Uncomment if needed, but usually not required
 
 # Environment variables management - loads .env files for configuration
 python-dotenv>=1.0.0

@@ -47,6 +47,28 @@ class AppStyles:
         "theme_mode": ft.ThemeMode.DARK,
     }
 
+    @staticmethod
+    def get_chat_history_style() -> dict:
+        """
+        Get responsive chat history style based on platform.
+        
+        Returns style dictionary with fixed height for desktop or expand=True
+        for mobile platforms.
+        
+        Returns:
+            dict: Style dictionary for chat history.
+        """
+        base_style = {
+            "expand": True,
+            "spacing": 10,
+            "auto_scroll": True,
+            "padding": 20,
+        }
+        # Don't set fixed height on mobile - let it expand
+        if not is_mobile():
+            base_style["height"] = 400
+        return base_style
+
     CHAT_HISTORY = {
         "expand": True,
         "spacing": 10,
@@ -55,6 +77,37 @@ class AppStyles:
         "padding": 20,
     }
 
+    @staticmethod
+    def get_message_input_style() -> dict:
+        """
+        Get responsive message input style based on platform.
+        
+        Returns style dictionary with fixed width for desktop or expand=True
+        for mobile platforms.
+        
+        Returns:
+            dict: Style dictionary for message input field.
+        """
+        base_style = {
+            "height": 50,
+            "multiline": False,
+            "text_size": 16,
+            "color": ft.Colors.WHITE,
+            "bgcolor": ft.Colors.GREY_800,
+            "border_color": ft.Colors.BLUE_400,
+            "cursor_color": ft.Colors.WHITE,
+            "content_padding": 10,
+            "border_radius": 8,
+            "hint_text": "Введите сообщение здесь...",
+            "shift_enter": True,
+        }
+        if not is_mobile():
+            base_style["width"] = 400
+        else:
+            base_style["expand"] = True
+        return base_style
+
+    # Keep MESSAGE_INPUT for backward compatibility, but it should use get_message_input_style() instead
     MESSAGE_INPUT = {
         "width": 400,
         "height": 50,
@@ -70,9 +123,36 @@ class AppStyles:
         "shift_enter": True,
     }
 
+    @staticmethod
+    def get_send_button_style() -> dict:
+        """
+        Get responsive send button style based on platform.
+        
+        Returns style dictionary with fixed width for desktop or adaptive
+        sizing for mobile platforms.
+        
+        Returns:
+            dict: Style dictionary for send button.
+        """
+        base_style = {
+            "text": "Отправка",
+            "icon": ft.Icons.SEND_ROUNDED,
+            "style": ft.ButtonStyle(
+                color=ft.Colors.WHITE,
+                bgcolor=ft.Colors.BLUE_700,
+                padding=10,
+            ),
+            "tooltip": "Отправить сообщение",
+            "height": 40,
+        }
+        if not is_mobile():
+            base_style["width"] = 130
+        # On mobile, let button size itself based on content
+        return base_style
+
     SEND_BUTTON = {
         "text": "Отправка",
-        "icon": ft.icons.SEND,
+        "icon": ft.Icons.SEND_ROUNDED,
         "style": ft.ButtonStyle(
             color=ft.Colors.WHITE,
             bgcolor=ft.Colors.BLUE_700,
@@ -85,7 +165,7 @@ class AppStyles:
 
     SAVE_BUTTON = {
         "text": "Сохранить",
-        "icon": ft.icons.SAVE,
+        "icon": ft.Icons.SAVE,
         "style": ft.ButtonStyle(
             color=ft.Colors.WHITE,
             bgcolor=ft.Colors.BLUE_700,
@@ -98,7 +178,7 @@ class AppStyles:
 
     CLEAR_BUTTON = {
         "text": "Очистить",
-        "icon": ft.icons.DELETE,
+        "icon": ft.Icons.DELETE,
         "style": ft.ButtonStyle(
             color=ft.Colors.WHITE,
             bgcolor=ft.Colors.RED_700,
@@ -111,7 +191,7 @@ class AppStyles:
 
     ANALYTICS_BUTTON = {
         "text": "Аналитика",
-        "icon": ft.icons.ANALYTICS,
+        "icon": ft.Icons.ANALYTICS,
         "style": ft.ButtonStyle(
             color=ft.Colors.WHITE,
             bgcolor=ft.Colors.GREEN_700,
@@ -124,7 +204,7 @@ class AppStyles:
 
     LOGOUT_BUTTON = {
         "text": "Выйти",
-        "icon": ft.icons.LOGOUT,
+        "icon": ft.Icons.LOGOUT,
         "style": ft.ButtonStyle(
             color=ft.Colors.WHITE,
             bgcolor=ft.Colors.ORANGE_700,
@@ -172,7 +252,7 @@ class AppStyles:
             color=ft.Colors.GREY_400,
             size=14,
         ),
-        "prefix_icon": ft.icons.SEARCH,
+        "prefix_icon": ft.Icons.SEARCH,
         "height": 45,
     }
 
@@ -244,7 +324,7 @@ class AppStyles:
 
     LOGIN_BUTTON = {
         "text": "Войти",
-        "icon": ft.icons.LOGIN,
+        "icon": ft.Icons.LOGIN,
         "width": 150,
         "style": ft.ButtonStyle(
             color=ft.Colors.WHITE,
@@ -255,7 +335,7 @@ class AppStyles:
 
     RESET_BUTTON = {
         "text": "Сбросить ключ",
-        "icon": ft.icons.RESTART_ALT,
+        "icon": ft.Icons.RESTART_ALT,
         "style": ft.ButtonStyle(
             color=ft.Colors.WHITE,
         ),

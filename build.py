@@ -58,7 +58,7 @@ def build_windows():
         "--hidden-import=random",
         "--collect-all=flet",
         "--collect-submodules=dotenv",
-        "src/main.py"
+        "main.py"
     ])
 
     # Move built directory to root as AIChat/
@@ -118,7 +118,7 @@ def build_linux():
         "--hidden-import=random",
         "--collect-all=flet",
         "--collect-submodules=dotenv",
-        "src/main.py"
+        "main.py"
     ])
 
     # Move built directory to root as AIChat/

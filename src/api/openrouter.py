@@ -66,7 +66,6 @@ def _load_env_file():
         if os.path.exists(env_path) and os.path.isfile(env_path):
             try:
                 load_dotenv(env_path, override=False)
-                logger.debug(f"Loaded .env file from: {env_path}")
                 env_loaded = True
                 break
             except Exception as e:
@@ -78,7 +77,6 @@ def _load_env_file():
             # This will search in current directory and parent directories
             result = load_dotenv(override=False)
             if result:
-                logger.debug("Loaded .env file using default search")
                 env_loaded = True
         except Exception as e:
             logger.warning(f"Failed to load .env using default search: {e}")
@@ -138,8 +136,6 @@ class OpenRouterClient:
             "Content-Type": "application/json"
         }
 
-        self.logger.info("OpenRouterClient initialized successfully")
-
         # Fetch available models during initialization for immediate availability
         self.available_models = self.get_models()
 
@@ -157,16 +153,12 @@ class OpenRouterClient:
             If API request fails, returns a default list of popular models
             to ensure application functionality.
         """
-        self.logger.debug("Fetching available models")
-
         try:
             response = requests.get(
                 f"{self.base_url}/models",
                 headers=self.headers
             )
             models_data = response.json()
-
-            self.logger.info(f"Retrieved {len(models_data['data'])} models")
 
             return [
                 {
@@ -182,7 +174,6 @@ class OpenRouterClient:
                 {"id": "claude-3-sonnet", "name": "Claude 3.5 Sonnet"},
                 {"id": "gpt-3.5-turbo", "name": "GPT-3.5 Turbo"}
             ]
-            self.logger.info(f"Retrieved {len(models_default)} models with Error: {e}")
             return models_default
 
     def send_message(self, message: str, model: str):
@@ -202,16 +193,12 @@ class OpenRouterClient:
             The response format follows OpenRouter API specification.
             Errors are caught and returned in a consistent format.
         """
-        self.logger.debug(f"Sending message to model: {model}")
-
         data = {
             "model": model,
             "messages": [{"role": "user", "content": message}]
         }
 
         try:
-            self.logger.debug("Making API request")
-
             response = requests.post(
                 f"{self.base_url}/chat/completions",
                 headers=self.headers,
@@ -219,8 +206,6 @@ class OpenRouterClient:
             )
 
             response.raise_for_status()
-
-            self.logger.info("Successfully received response from API")
 
             return response.json()
 

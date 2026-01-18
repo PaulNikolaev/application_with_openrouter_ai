@@ -55,9 +55,13 @@
    ```
 
 5. **Настройка переменных окружения**
-   - Скопируйте файл `.env.example` в новый файл `.env`
-   - Откройте `.env` и замените `your_api_key_here` на ваш API ключ OpenRouter
-   - Остальные настройки можно оставить по умолчанию
+   - Создайте файл `.env` в корневой директории проекта
+   - Добавьте в `.env` следующее содержимое:
+     ```
+     OPENROUTER_API_KEY=ваш_api_ключ
+     BASE_URL=https://openrouter.ai/api/v1
+     ```
+   - Замените `ваш_api_ключ` на ваш API ключ OpenRouter
 
 ## Сборка приложения
 
@@ -87,7 +91,7 @@ pip install -r requirements-mobile.txt
 python build_mobile.py
 ```
 
-Результат сборки: `build/android/app/build/outputs/apk/release/app-release.apk`
+Результат сборки: `build/apk/*.apk` (новая версия Flet 0.80.2+) или `build/android/app/build/outputs/apk/release/app-release.apk` (старая версия)
 
 ## Конфигурация
 
@@ -115,18 +119,25 @@ TEMPERATURE=0.7
 │   ├── api/               # API интеграции
 │   │   ├── __init__.py
 │   │   └── openrouter.py  # Взаимодействие с OpenRouter API
+│   ├── auth/              # Аутентификация
+│   │   ├── __init__.py
+│   │   ├── manager.py     # Менеджер аутентификации
+│   │   ├── storage.py     # Хранилище данных аутентификации
+│   │   └── validator.py   # Валидация учетных данных
 │   ├── ui/                # Пользовательский интерфейс
 │   │   ├── __init__.py
 │   │   ├── components.py  # UI компоненты
+│   │   ├── login.py       # Окно авторизации
 │   │   └── styles.py      # Стили интерфейса
 │   ├── utils/             # Утилиты
 │   │   ├── __init__.py
 │   │   ├── analytics.py   # Аналитика использования
 │   │   ├── cache.py       # Кэширование
 │   │   ├── logger.py      # Система логирования
-│   │   └── monitor.py     # Мониторинг системы
-│   ├── main_simple.py     # Упрощенная версия main.py с урезанным функционалом
-│   └── main.py            # Точка входа приложения
+│   │   ├── monitor.py     # Мониторинг системы
+│   │   └── platform.py    # Определение платформы
+│   └── app.py             # Основной класс приложения
+├── main.py                # Точка входа приложения
 ├── .env.example           # Пример конфигурации
 ├── .gitignore             # Исключения Git
 ├── build.py               # Скрипт сборки десктопного приложения

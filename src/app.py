@@ -8,7 +8,9 @@ It combines all components into a complete desktop chat application.
 import asyncio
 import json
 import os
+import sys
 import time
+import traceback
 from datetime import datetime
 
 import flet as ft
@@ -208,23 +210,46 @@ class ChatApp:
         Args:
             page (ft.Page): Flet page instance to configure.
         """
-        # Apply page settings from style configuration
-        for key, value in AppStyles.PAGE_SETTINGS.items():
-            setattr(page, key, value)
+        try:
+            # Apply page settings from style configuration
+            for key, value in AppStyles.PAGE_SETTINGS.items():
+                setattr(page, key, value)
 
-        AppStyles.set_window_size(page)
+            AppStyles.set_window_size(page)
 
-        # Check authentication and show login if needed
-        if not self.is_authenticated:
-            self._show_login_window(page)
-            return
+            # Check authentication and show login if needed
+            if not self.is_authenticated:
+                self._show_login_window(page)
+                return
 
-        # Initialize API client with stored key if not already initialized
-        if not self.api_client:
-            self._initialize_api_client()
+            # Initialize API client with stored key if not already initialized
+            if not self.api_client:
+                self._initialize_api_client()
 
-        # Continue with main application setup
-        self._setup_main_ui(page)
+            # Continue with main application setup
+            self._setup_main_ui(page)
+        except Exception as e:
+            # Log error and show error message to prevent silent failures
+            error_msg = f"Критическая ошибка при запуске приложения: {e}\n"
+            error_msg += "".join(traceback.format_exception(type(e), e, e.__traceback__))
+            self.logger.error(error_msg)
+            
+            # Show error dialog to user
+            try:
+                page.add(
+                    ft.AlertDialog(
+                        title=ft.Text("Ошибка запуска"),
+                        content=ft.Text(f"Приложение не может запуститься:\n{str(e)}"),
+                        actions=[
+                            ft.TextButton(content=ft.Text("Закрыть"), on_click=lambda _: page.window_close())
+                        ],
+                        open=True
+                    )
+                )
+                page.update()
+            except:
+                # If dialog fails, exit immediately to prevent restart loop
+                os._exit(1)  # Use os._exit to prevent any cleanup or restart
 
     def _setup_main_ui(self, page: ft.Page):
         """
@@ -373,6 +398,9 @@ class ChatApp:
             """
             stats = self.analytics.get_statistics()
 
+            def close_analytics_dialog(e):
+                close_dialog(dialog)
+            
             dialog = ft.AlertDialog(
                 title=ft.Text("Аналитика"),
                 content=ft.Column([
@@ -382,15 +410,13 @@ class ChatApp:
                     ft.Text(f"Сообщений в минуту: {stats['messages_per_minute']:.2f}")
                 ]),
                 actions=[
-                    ft.TextButton("Закрыть", on_click=lambda e: close_dialog(dialog)),
+                    ft.TextButton(content=ft.Text("Закрыть"), on_click=close_analytics_dialog),
                 ],
             )
 
-            page.overlay.append(dialog)
-            dialog.open = True
-            page.update()
+            page.show_dialog(dialog)
 
-        async def clear_history(e):
+        def clear_history(e):
             """
             Clear chat history from cache and interface.
 
@@ -400,39 +426,11 @@ class ChatApp:
                 self.cache.clear_history()
                 self.analytics.clear_data()
                 self.chat_history.controls.clear()
+                page.update()  # Update UI after clearing
 
             except Exception as e:
                 self.logger.error(f"Ошибка очистки истории: {e}")
                 show_error_snack(page, f"Ошибка очистки истории: {str(e)}")
-
-        async def confirm_clear_history(e):
-            """
-            Show confirmation dialog before clearing history.
-
-            Displays a modal dialog asking for confirmation before
-            executing the clear history operation.
-            """
-            def close_dlg(e):
-                close_dialog(dialog)
-
-            async def clear_confirmed(e):
-                await clear_history(e)
-                close_dialog(dialog)
-
-            dialog = ft.AlertDialog(
-                modal=True,
-                title=ft.Text("Подтверждение удаления"),
-                content=ft.Text("Вы уверены? Это действие нельзя отменить!"),
-                actions=[
-                    ft.TextButton("Отмена", on_click=close_dlg),
-                    ft.TextButton("Очистить", on_click=clear_confirmed),
-                ],
-                actions_alignment=ft.MainAxisAlignment.END,
-            )
-
-            page.overlay.append(dialog)
-            dialog.open = True
-            page.update()
 
         def close_dialog(dialog):
             """
@@ -444,8 +442,40 @@ class ChatApp:
             dialog.open = False
             page.update()
 
-            if dialog in page.overlay:
-                page.overlay.remove(dialog)
+        async def confirm_clear_history(e):
+            """
+            Show confirmation dialog before clearing history.
+
+            Displays a modal dialog asking for confirmation before
+            executing the clear history operation.
+            """
+            def close_dlg(e):
+                close_dialog(dialog)
+
+            def clear_confirmed(e):
+                # Close dialog first
+                close_dialog(dialog)
+                # Then clear history (now synchronous)
+                clear_history(e)
+
+            dialog = ft.AlertDialog(
+                modal=True,
+                title=ft.Text("Подтверждение удаления"),
+                content=ft.Text("Вы уверены? Это действие нельзя отменить!"),
+                actions=[
+                    ft.TextButton(
+                        content=ft.Text("Отмена"),
+                        on_click=close_dlg
+                    ),
+                    ft.TextButton(
+                        content=ft.Text("Очистить"),
+                        on_click=clear_confirmed
+                    ),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+
+            page.show_dialog(dialog)
 
         async def save_dialog(e):
             """
@@ -492,20 +522,6 @@ class ChatApp:
                     raise IOError(f"Failed to write file: {filepath}. Error: {e}")
 
                 # Show success dialog
-                dialog_actions = [
-                    ft.TextButton("OK", on_click=lambda e: close_dialog(dialog)),
-                ]
-                
-                # Only add "Open folder" button on desktop platforms
-                # os.startfile() is Windows-specific and not available on mobile
-                if not is_mobile() and os.name == 'nt':
-                    dialog_actions.append(
-                        ft.TextButton(
-                            "Открыть папку",
-                            on_click=lambda e: os.startfile(self.exports_dir)
-                        )
-                    )
-
                 dialog = ft.AlertDialog(
                     modal=True,
                     title=ft.Text("Диалог сохранен"),
@@ -513,43 +529,74 @@ class ChatApp:
                         ft.Text("Путь сохранения:"),
                         ft.Text(filepath, selectable=True, weight=ft.FontWeight.BOLD),
                     ]),
-                    actions=dialog_actions,
                 )
+                
+                def close_save_dialog(e):
+                    close_dialog(dialog)
+                
+                def open_folder(e):
+                    os.startfile(self.exports_dir)
+                    close_dialog(dialog)
+                
+                dialog.actions = [
+                    ft.TextButton(content=ft.Text("OK"), on_click=close_save_dialog),
+                ]
+                
+                # Only add "Open folder" button on desktop platforms
+                # os.startfile() is Windows-specific and not available on mobile
+                if not is_mobile() and os.name == 'nt':
+                    dialog.actions.append(
+                        ft.TextButton(
+                            content=ft.Text("Открыть папку"),
+                            on_click=open_folder
+                        )
+                    )
 
-                page.overlay.append(dialog)
-                dialog.open = True
-                page.update()
+                page.show_dialog(dialog)
 
             except Exception as e:
                 self.logger.error(f"Ошибка сохранения: {e}")
                 show_error_snack(page, f"Ошибка сохранения: {str(e)}")
 
-        # Create UI components
-        self.message_input = ft.TextField(**AppStyles.MESSAGE_INPUT)
-        self.chat_history = ft.ListView(**AppStyles.CHAT_HISTORY)
+        # Create UI components with responsive styles
+        self.message_input = ft.TextField(**AppStyles.get_message_input_style())
+        self.chat_history = ft.ListView(**AppStyles.get_chat_history_style())
 
         # Load existing history
         self.load_chat_history()
 
         # Create control buttons
+        # In Flet 0.80+, buttons use content=ft.Text() instead of text=
+        save_button_style = AppStyles.SAVE_BUTTON.copy()
+        save_text = save_button_style.pop("text", "Сохранить")
         save_button = ft.ElevatedButton(
+            content=ft.Text(save_text),
             on_click=save_dialog,
-            **AppStyles.SAVE_BUTTON
+            **save_button_style
         )
 
+        clear_button_style = AppStyles.CLEAR_BUTTON.copy()
+        clear_text = clear_button_style.pop("text", "Очистить")
         clear_button = ft.ElevatedButton(
+            content=ft.Text(clear_text),
             on_click=confirm_clear_history,
-            **AppStyles.CLEAR_BUTTON
+            **clear_button_style
         )
 
+        send_button_style = AppStyles.get_send_button_style()
+        send_text = send_button_style.pop("text", "Отправка")
         send_button = ft.ElevatedButton(
+            content=ft.Text(send_text),
             on_click=send_message_click,
-            **AppStyles.SEND_BUTTON
+            **send_button_style
         )
 
+        analytics_button_style = AppStyles.ANALYTICS_BUTTON.copy()
+        analytics_text = analytics_button_style.pop("text", "Аналитика")
         analytics_button = ft.ElevatedButton(
+            content=ft.Text(analytics_text),
             on_click=show_analytics,
-            **AppStyles.ANALYTICS_BUTTON
+            **analytics_button_style
         )
 
         async def handle_logout(e):
@@ -564,9 +611,12 @@ class ChatApp:
             page.controls.clear()
             self._show_login_window(page)
 
+        logout_button_style = AppStyles.LOGOUT_BUTTON.copy()
+        logout_text = logout_button_style.pop("text", "Выйти")
         logout_button = ft.ElevatedButton(
+            content=ft.Text(logout_text),
             on_click=handle_logout,
-            **AppStyles.LOGOUT_BUTTON
+            **logout_button_style
         )
 
         # Create layout components - buttons in 2 rows, 2 buttons each
@@ -591,17 +641,30 @@ class ChatApp:
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-        input_row = ft.Row(
-            controls=[
-                self.message_input,
-                send_button
-            ],
-            **AppStyles.INPUT_ROW
-        )
+        # Create input layout: vertical on mobile, horizontal on desktop
+        if is_mobile():
+            # On mobile: field and button stacked vertically
+            input_container = ft.Column(
+                controls=[
+                    self.message_input,
+                    send_button
+                ],
+                spacing=10,
+                horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+            )
+        else:
+            # On desktop: field and button side by side
+            input_container = ft.Row(
+                controls=[
+                    self.message_input,
+                    send_button
+                ],
+                **AppStyles.get_input_row_style()
+            )
 
         controls_column = ft.Column(
             controls=[
-                input_row,
+                input_container,
                 control_buttons
             ],
             **AppStyles.CONTROLS_COLUMN
@@ -639,9 +702,6 @@ class ChatApp:
                 self.monitor.get_metrics()
             except Exception as e:
                 self.logger.warning(f"Failed to initialize monitor metrics: {e}")
-
-        # Log application start
-        self.logger.info("Приложение запущено")
 
     def _initialize_api_client(self):
         """

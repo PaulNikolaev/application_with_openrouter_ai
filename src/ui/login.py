@@ -70,17 +70,18 @@ class LoginWindow:
         )
 
         # Login button - use responsive width
+        # In Flet 0.80+, buttons use content=ft.Text() instead of text=
         login_button_width = None if is_mobile() else 150
         self.login_button = ft.ElevatedButton(
-            text="Войти",
-            icon=ft.icons.LOGIN,
+            content=ft.Text("Войти"),
+            icon=ft.Icons.LOGIN,
             width=login_button_width,
         )
 
         # Reset button (only visible on PIN login)
         self.reset_button = ft.TextButton(
-            text="Сбросить ключ",
-            icon=ft.icons.RESTART_ALT,
+            content=ft.Text("Сбросить ключ"),
+            icon=ft.Icons.RESTART_ALT,
             visible=not is_first_login,
         )
 

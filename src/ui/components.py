@@ -27,10 +27,6 @@ class MessageBubble(ft.Container):
         alignment (ft.alignment): Text alignment within the bubble.
         margin (ft.margin): External margins for dialog effect.
         content (ft.Column): Column containing the message text.
-
-    Args:
-        message (str): Message text to display.
-        is_user (bool): Flag indicating if this is a user message.
     """
 
     def __init__(self, message: str, is_user: bool):
@@ -50,7 +46,8 @@ class MessageBubble(ft.Container):
         self.bgcolor = ft.Colors.BLUE_700 if is_user else ft.Colors.GREY_700
 
         # Right alignment for user, left for AI
-        self.alignment = ft.alignment.center_right if is_user else ft.alignment.center_left
+        # In Flet 0.80+, use ft.Alignment(x, y) where x=-1.0=left, 1.0=right, 0.0=center
+        self.alignment = ft.alignment.Alignment(1.0, 0.5) if is_user else ft.alignment.Alignment(-1.0, 0.5)
 
         # Create dialog effect with asymmetric margins
         self.margin = ft.margin.only(
@@ -86,10 +83,6 @@ class ModelSelector(ft.Dropdown):
         all_options (list): Complete list of all available options.
         value (str): Currently selected model ID.
         search_field (ft.TextField): Search field for filtering models.
-
-    Args:
-        models (list): List of available models in format:
-            [{"id": "model-id", "name": "Model Name"}, ...]
     """
 
     def __init__(self, models: list):
