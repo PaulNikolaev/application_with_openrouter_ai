@@ -24,15 +24,15 @@ def check_android_sdk() -> bool:
     android_home = os.environ.get('ANDROID_HOME')
     
     if not android_home:
-        print("Error: ANDROID_HOME environment variable is not set.")
-        print("Please set ANDROID_HOME to your Android SDK installation path.")
+        print("Ошибка: переменная окружения ANDROID_HOME не установлена.")
+        print("Пожалуйста, установите ANDROID_HOME на путь к установке Android SDK.")
         return False
     
     if not os.path.exists(android_home):
-        print(f"Error: ANDROID_HOME path does not exist: {android_home}")
+        print(f"Ошибка: путь ANDROID_HOME не существует: {android_home}")
         return False
     
-    print(f"Android SDK found at: {android_home}")
+    print(f"Android SDK найден: {android_home}")
     return True
 
 
@@ -49,20 +49,76 @@ def check_java_home() -> bool:
     java_home = os.environ.get('JAVA_HOME')
     
     if not java_home:
-        print("Error: JAVA_HOME environment variable is not set.")
-        print("Please set JAVA_HOME to your JDK installation path.")
+        print("Ошибка: переменная окружения JAVA_HOME не установлена.")
+        print("Пожалуйста, установите JAVA_HOME на путь к установке JDK.")
         return False
     
     if not os.path.exists(java_home):
-        print(f"Error: JAVA_HOME path does not exist: {java_home}")
+        print(f"Ошибка: путь JAVA_HOME не существует: {java_home}")
         return False
     
     # Check if java executable exists
     java_exe = os.path.join(java_home, "bin", "java.exe" if sys.platform == "win32" else "java")
     if not os.path.exists(java_exe):
-        print(f"Warning: Java executable not found at expected location: {java_exe}")
+        print(f"Предупреждение: исполняемый файл Java не найден по ожидаемому пути: {java_exe}")
     
-    print(f"JDK found at: {java_home}")
+    print(f"JDK найден: {java_home}")
+    return True
+
+
+def check_build_tools() -> bool:
+    """
+    Check if required build tools are available.
+
+    Verifies that 'flet' and 'flet-builder' commands are available
+    and properly installed in the system.
+
+    Returns:
+        bool: True if all build tools are available, False otherwise.
+    """
+    print("Проверка инструментов сборки...")
+    
+    # Check if flet command is available
+    try:
+        result = subprocess.run(
+            ["flet", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            print(f"Flet найден: {result.stdout.strip()}")
+        else:
+            print("Предупреждение: команда 'flet' вернула ненулевой код возврата.")
+    except FileNotFoundError:
+        print("Ошибка: команда 'flet' не найдена.")
+        print("  Решение: Установите Flet командой: pip install flet")
+        return False
+    except subprocess.TimeoutExpired:
+        print("Предупреждение: команда 'flet --version' превысила время ожидания.")
+    except Exception as e:
+        print(f"Предупреждение: не удалось проверить установку 'flet': {e}")
+    
+    # Check if flet-builder is available (it's a package, not a command)
+    # We'll check by trying to import or checking if it's in pip list
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "show", "flet-builder"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            print("Пакет flet-builder найден")
+        else:
+            print("Предупреждение: пакет 'flet-builder' не найден.")
+            print("  Решение: Установите командой: pip install flet-builder")
+            print("  Примечание: Он будет установлен автоматически во время установки зависимостей.")
+    except subprocess.TimeoutExpired:
+        print("Предупреждение: не удалось проверить пакет 'flet-builder' (превышено время ожидания).")
+    except Exception as e:
+        print(f"Предупреждение: не удалось проверить пакет 'flet-builder': {e}")
+    
     return True
 
 
@@ -79,10 +135,10 @@ def install_mobile_dependencies() -> bool:
     requirements_file = Path("requirements-mobile.txt")
     
     if not requirements_file.exists():
-        print(f"Error: {requirements_file} not found.")
+        print(f"Ошибка: файл {requirements_file} не найден.")
         return False
     
-    print("Installing mobile dependencies...")
+    print("Установка зависимостей для мобильной сборки...")
     try:
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", "-r", str(requirements_file)],
@@ -90,12 +146,25 @@ def install_mobile_dependencies() -> bool:
             capture_output=True,
             text=True
         )
-        print("Mobile dependencies installed successfully.")
+        print("Зависимости для мобильной сборки успешно установлены.")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error installing mobile dependencies: {e}")
-        print(f"Output: {e.stdout}")
-        print(f"Error: {e.stderr}")
+        print(f"Ошибка установки зависимостей (код возврата: {e.returncode})")
+        if e.stdout:
+            print(f"Вывод: {e.stdout}")
+        if e.stderr:
+            print(f"Детали ошибки: {e.stderr}")
+        print("\nРешение проблем:")
+        print("  1. Проверьте подключение к интернету")
+        print("  2. Убедитесь, что файл requirements-mobile.txt корректен")
+        print("  3. Попробуйте установить вручную: pip install -r requirements-mobile.txt")
+        print("  4. Проверьте совместимость версии Python")
+        return False
+    except Exception as e:
+        print(f"Неожиданная ошибка при установке зависимостей: {e}")
+        print("\nРешение проблем:")
+        print("  1. Проверьте работу pip: pip --version")
+        print("  2. Попробуйте обновить pip: python -m pip install --upgrade pip")
         return False
 
 
@@ -135,16 +204,31 @@ def build_android_apk(
         bool: True if build succeeded, False otherwise.
     """
     print("=" * 60)
-    print("Building Android APK")
+    print("Сборка Android APK")
     print("=" * 60)
     print()
     
     # Check environment prerequisites
-    print("Checking prerequisites...")
+    print("Проверка предварительных требований...")
     if not check_android_sdk():
+        print("\nРешение проблем:")
+        print("  1. Установите Android SDK (через Android Studio или отдельно)")
+        print("  2. Установите переменную окружения ANDROID_HOME на путь к SDK")
+        print("     Пример: set ANDROID_HOME=C:\\Users\\YourName\\AppData\\Local\\Android\\Sdk")
         return False
     
     if not check_java_home():
+        print("\nРешение проблем:")
+        print("  1. Установите JDK (Java Development Kit) версии 11 или выше")
+        print("  2. Установите переменную окружения JAVA_HOME на путь к установке JDK")
+        print("     Пример: set JAVA_HOME=C:\\Program Files\\Java\\jdk-17")
+        return False
+    
+    if not check_build_tools():
+        print("\nРешение проблем:")
+        print("  1. Установите Flet: pip install flet")
+        print("  2. Установите Flet builder: pip install flet-builder")
+        print("  3. Убедитесь, что директория скриптов Python в PATH")
         return False
     
     print()
@@ -173,7 +257,7 @@ def build_android_apk(
             org = "com.example"
     
     # Prepare flet build command
-    print("Preparing Flet build command...")
+    print("Подготовка команды сборки Flet...")
     build_command = [
         "flet",
         "build",
@@ -191,29 +275,31 @@ def build_android_apk(
         icon_file = Path(icon_path)
         if icon_file.exists():
             build_command.extend(["--icon", str(icon_file)])
-            print(f"Using icon: {icon_path}")
+            print(f"Используется иконка: {icon_path}")
         else:
-            print(f"Warning: Icon file not found: {icon_path}")
+            print(f"Предупреждение: файл иконки не найден: {icon_path}")
     
     # Add Android permissions
     if android_permissions:
         permissions_str = ",".join(android_permissions)
         build_command.extend(["--android-permissions", permissions_str])
-        print(f"Android permissions: {', '.join(android_permissions)}")
+        print(f"Разрешения Android: {', '.join(android_permissions)}")
     
     print()
-    print("Starting APK build process...")
-    print(f"Project: {project_name}")
-    print(f"Package: {package_name}")
-    print(f"Organization: {org}")
-    print(f"Version: {version} (build {build_number})")
-    print(f"Min SDK: {android_min_sdk}")
+    print("Запуск процесса сборки APK...")
+    print(f"Проект: {project_name}")
+    print(f"Пакет: {package_name}")
+    print(f"Организация: {org}")
+    print(f"Версия: {version} (сборка {build_number})")
+    print(f"Минимальный SDK: {android_min_sdk}")
     if android_permissions:
-        print(f"Permissions: {', '.join(android_permissions)}")
+        print(f"Разрешения: {', '.join(android_permissions)}")
     print()
     
     # Execute build command
     try:
+        print("Выполнение команды сборки...")
+        # Capture output for error handling but also allow real-time display
         result = subprocess.run(
             build_command,
             check=True,
@@ -222,30 +308,79 @@ def build_android_apk(
         
         print()
         print("=" * 60)
-        print("APK build completed successfully!")
+        print("Сборка APK успешно завершена!")
         print("=" * 60)
         apk_path = Path("build/android/app/build/outputs/apk/release/app-release.apk")
         if apk_path.exists():
-            print(f"APK location: {apk_path.absolute()}")
+            print(f"Расположение APK: {apk_path.absolute()}")
+            print(f"Размер APK: {apk_path.stat().st_size / (1024 * 1024):.2f} MB")
         else:
-            print("APK location: build/android/app/build/outputs/apk/release/app-release.apk")
+            print("Расположение APK: build/android/app/build/outputs/apk/release/app-release.apk")
+            print("Предупреждение: файл APK не найден по ожидаемому пути.")
+            print("               Сборка могла завершиться, но файл находится в другом месте.")
         print("=" * 60)
         return True
         
     except subprocess.CalledProcessError as e:
         print()
         print("=" * 60)
-        print("APK build failed!")
+        print("Ошибка сборки APK!")
         print("=" * 60)
-        print(f"Error: {e}")
+        print(f"Код возврата: {e.returncode}")
+        
+        # Provide more detailed error information
+        if e.stderr:
+            print("\nВывод ошибки:")
+            print("-" * 60)
+            print(e.stderr)
+        
+        if e.stdout:
+            print("\nВывод сборки:")
+            print("-" * 60)
+            print(e.stdout)
+        
+        print("\nРешение проблем:")
+        print("  1. Проверьте, что все предварительные требования установлены:")
+        print("     - Android SDK (ANDROID_HOME установлен правильно)")
+        print("     - JDK (JAVA_HOME установлен правильно)")
+        print("     - Пакеты Flet и flet-builder")
+        print("  2. Убедитесь, что параметры сборки корректны:")
+        print(f"     - Имя пакета: {package_name}")
+        print(f"     - Организация: {org}")
+        print(f"     - Путь к иконке: {icon_path or 'по умолчанию'}")
+        print("  3. Проверьте логи сборки выше на наличие конкретных сообщений об ошибках")
+        print("  4. Убедитесь, что у вас достаточно места на диске")
+        print("  5. Попробуйте очистить артефакты предыдущей сборки:")
+        print("     - Удалите директорию 'build/' если она существует")
+        
         return False
     except FileNotFoundError:
         print()
         print("=" * 60)
-        print("Error: 'flet' command not found.")
+        print("Ошибка: команда 'flet' не найдена.")
         print("=" * 60)
-        print("Please ensure Flet is installed and available in PATH.")
-        print("Try running: pip install flet-builder")
+        print("Команда 'flet' недоступна в вашем PATH.")
+        print("\nРешение проблем:")
+        print("  1. Установите Flet: pip install flet")
+        print("  2. Установите Flet builder: pip install flet-builder")
+        print("  3. Перезапустите терминал/IDE после установки")
+        print("  4. Проверьте установку: flet --version")
+        print("  5. Убедитесь, что директория Python Scripts в PATH:")
+        print("     - Windows: C:\\PythonXX\\Scripts или %APPDATA%\\Python\\PythonXX\\Scripts")
+        print("     - Linux/macOS: ~/.local/bin или /usr/local/bin")
+        return False
+    except Exception as e:
+        print()
+        print("=" * 60)
+        print("Неожиданная ошибка во время сборки APK!")
+        print("=" * 60)
+        print(f"Тип ошибки: {type(e).__name__}")
+        print(f"Сообщение об ошибке: {str(e)}")
+        print("\nРешение проблем:")
+        print("  1. Проверьте версию Python (требуется Python 3.8+)")
+        print("  2. Убедитесь, что все зависимости установлены правильно")
+        print("  3. Проверьте права доступа к директории сборки")
+        print("  4. Изучите сообщение об ошибке выше для деталей")
         return False
 
 
@@ -264,13 +399,13 @@ def main():
     
     if icon_png.exists():
         icon_path = str(icon_png)
-        print(f"Found icon: {icon_path}")
+        print(f"Найдена иконка: {icon_path}")
     elif icon_ico.exists():
-        print("Note: Found icon.ico but Android requires PNG format.")
-        print("      APK will use default Flet icon. To use custom icon:")
-        print("      Convert icon.ico to PNG (1024x1024 recommended) and save as assets/icon.png")
+        print("Примечание: Найден icon.ico, но для Android требуется формат PNG.")
+        print("            APK будет использовать иконку Flet по умолчанию. Для использования собственной иконки:")
+        print("            Конвертируйте icon.ico в PNG (рекомендуется 1024x1024) и сохраните как assets/icon.png")
     else:
-        print("Note: No icon found. APK will use default Flet icon.")
+        print("Примечание: Иконка не найдена. APK будет использовать иконку Flet по умолчанию.")
     
     # Default build parameters
     success = build_android_apk(
