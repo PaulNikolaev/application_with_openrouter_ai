@@ -22,6 +22,7 @@ from src.utils.analytics import Analytics
 from src.utils.cache import ChatCache
 from src.utils.logger import AppLogger
 from src.utils.monitor import PerformanceMonitor
+from src.utils.platform import is_mobile
 
 
 class ChatApp:
@@ -80,9 +81,80 @@ class ChatApp:
             **AppStyles.BALANCE_TEXT
         )
 
-        # Create exports directory
-        self.exports_dir = "exports"
-        os.makedirs(self.exports_dir, exist_ok=True)
+        # Create exports directory with platform-specific path handling
+        self.exports_dir = self._get_exports_directory()
+        self._ensure_exports_directory()
+
+    def _get_exports_directory(self) -> str:
+        """
+        Get platform-specific exports directory path.
+
+        On mobile platforms (Android/iOS), uses app's internal storage.
+        On desktop platforms, uses 'exports' directory relative to the application.
+
+        Returns:
+            str: Path to exports directory.
+        """
+        if is_mobile():
+            # On Android, use app's internal storage
+            try:
+                # Try to use Android app data directory
+                android_data = os.environ.get('ANDROID_DATA', '')
+                if android_data:
+                    # Use Android app-specific directory
+                    app_exports_dir = os.path.join(
+                        android_data,
+                        'user',
+                        '0',
+                        'com.example.aichat',  # Package name placeholder
+                        'files',
+                        'exports'
+                    )
+                    return app_exports_dir
+                else:
+                    # Fallback: use current directory with 'exports' subdirectory
+                    return os.path.join(os.getcwd(), 'exports')
+            except Exception:
+                # Ultimate fallback: current directory
+                return os.path.join(os.getcwd(), 'exports')
+        else:
+            # Desktop: use 'exports' directory relative to application
+            return os.path.join(os.getcwd(), 'exports')
+
+    def _ensure_exports_directory(self) -> bool:
+        """
+        Ensure exports directory exists and is writable.
+
+        Creates the directory if it doesn't exist and verifies write permissions.
+        Handles potential file system access issues gracefully.
+
+        Returns:
+            bool: True if directory is accessible and writable, False otherwise.
+        """
+        try:
+            # Check if directory exists
+            if not os.path.exists(self.exports_dir):
+                # Create directory with parent directories if needed
+                os.makedirs(self.exports_dir, exist_ok=True)
+
+            # Verify directory is writable by attempting to create a test file
+            test_file = os.path.join(self.exports_dir, '.test_write')
+            try:
+                with open(test_file, 'w') as f:
+                    f.write('test')
+                os.remove(test_file)
+                return True
+            except (OSError, PermissionError, IOError) as e:
+                self.logger.warning(
+                    f"Exports directory is not writable: {self.exports_dir}. Error: {e}"
+                )
+                return False
+
+        except (OSError, PermissionError, IOError) as e:
+            self.logger.warning(
+                f"Failed to create exports directory: {self.exports_dir}. Error: {e}"
+            )
+            return False
 
     def load_chat_history(self):
         """
@@ -396,15 +468,44 @@ class ChatApp:
                         "tokens_used": msg[5]
                     })
 
+                # Verify exports directory is accessible before saving
+                if not self._ensure_exports_directory():
+                    raise IOError(
+                        f"Exports directory is not accessible or writable: {self.exports_dir}"
+                    )
+
+                # Verify exports directory is accessible before saving
+                if not self._ensure_exports_directory():
+                    raise IOError(
+                        f"Exports directory is not accessible or writable: {self.exports_dir}"
+                    )
+
                 # Create filename with timestamp
                 filename = f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
                 filepath = os.path.join(self.exports_dir, filename)
 
-                # Save to JSON
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    json.dump(dialog_data, f, ensure_ascii=False, indent=2, default=str)
+                # Save to JSON with error handling
+                try:
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        json.dump(dialog_data, f, ensure_ascii=False, indent=2, default=str)
+                except (OSError, PermissionError, IOError) as e:
+                    raise IOError(f"Failed to write file: {filepath}. Error: {e}")
 
                 # Show success dialog
+                dialog_actions = [
+                    ft.TextButton("OK", on_click=lambda e: close_dialog(dialog)),
+                ]
+                
+                # Only add "Open folder" button on desktop platforms
+                # os.startfile() is Windows-specific and not available on mobile
+                if not is_mobile() and os.name == 'nt':
+                    dialog_actions.append(
+                        ft.TextButton(
+                            "Открыть папку",
+                            on_click=lambda e: os.startfile(self.exports_dir)
+                        )
+                    )
+
                 dialog = ft.AlertDialog(
                     modal=True,
                     title=ft.Text("Диалог сохранен"),
@@ -412,12 +513,7 @@ class ChatApp:
                         ft.Text("Путь сохранения:"),
                         ft.Text(filepath, selectable=True, weight=ft.FontWeight.BOLD),
                     ]),
-                    actions=[
-                        ft.TextButton("OK", on_click=lambda e: close_dialog(dialog)),
-                        ft.TextButton("Открыть папку",
-                                      on_click=lambda e: os.startfile(self.exports_dir)
-                                      ),
-                    ],
+                    actions=dialog_actions,
                 )
 
                 page.overlay.append(dialog)
