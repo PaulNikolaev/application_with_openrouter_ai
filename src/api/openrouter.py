@@ -3,7 +3,8 @@ OpenRouter API client module.
 
 This module provides a client for interacting with the OpenRouter API.
 OpenRouter is a service that provides unified access to various language models
-(GPT, Claude, etc.) through a single API interface.
+(GPT, Claude, etc.) through a single API interface. Adapted for cross-platform
+compatibility including mobile platforms with proper .env file handling.
 """
 import os
 
@@ -11,9 +12,87 @@ import requests
 from dotenv import load_dotenv
 
 from src.utils.logger import AppLogger
+from src.utils.platform import is_mobile
+
+
+def _load_env_file():
+    """
+    Load environment variables from .env file with cross-platform support.
+
+    Attempts to load .env file from multiple locations:
+    - Current working directory (desktop)
+    - App data directory (mobile)
+    - Project root directory
+
+    Logs warnings if .env file is not found but continues execution.
+    """
+    logger = AppLogger()
+    
+    # Determine .env file path based on platform
+    env_paths = []
+    
+    if is_mobile():
+        # On mobile, try app data directory first
+        try:
+            # Try Android app data directory
+            android_data = os.environ.get('ANDROID_DATA', '')
+            if android_data:
+                app_data_dir = os.path.join(
+                    android_data,
+                    'user',
+                    '0',
+                    'com.example.aichat',  # Package name placeholder
+                    'files'
+                )
+                env_paths.append(os.path.join(app_data_dir, '.env'))
+            
+            # Fallback: current directory
+            env_paths.append(os.path.join(os.getcwd(), '.env'))
+        except Exception:
+            # Ultimate fallback: current directory
+            env_paths.append(os.path.join(os.getcwd(), '.env'))
+    else:
+        # Desktop: try current directory and project root
+        current_dir = os.getcwd()
+        env_paths.append(os.path.join(current_dir, '.env'))
+        
+        # Try project root (parent of src directory if running from src)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        env_paths.append(os.path.join(project_root, '.env'))
+    
+    # Try to load .env from determined paths
+    env_loaded = False
+    for env_path in env_paths:
+        if os.path.exists(env_path) and os.path.isfile(env_path):
+            try:
+                load_dotenv(env_path, override=False)
+                logger.debug(f"Loaded .env file from: {env_path}")
+                env_loaded = True
+                break
+            except Exception as e:
+                logger.warning(f"Failed to load .env from {env_path}: {e}")
+    
+    # If no .env found, try default load_dotenv() behavior
+    if not env_loaded:
+        try:
+            # This will search in current directory and parent directories
+            result = load_dotenv(override=False)
+            if result:
+                logger.debug("Loaded .env file using default search")
+                env_loaded = True
+        except Exception as e:
+            logger.warning(f"Failed to load .env using default search: {e}")
+    
+    # Log warning if .env file was not found
+    if not env_loaded:
+        logger.warning(
+            ".env file not found. Environment variables should be set manually "
+            "or through system environment. Searched paths: " + ", ".join(env_paths)
+        )
+
 
 # Load environment variables from .env file on module import
-load_dotenv()
+_load_env_file()
 
 
 class OpenRouterClient:
