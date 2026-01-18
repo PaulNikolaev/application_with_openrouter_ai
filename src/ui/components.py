@@ -1,14 +1,16 @@
 """
 UI components module.
 
-This module provides reusable UI components for the desktop application.
+This module provides reusable UI components for the application.
 It includes chat message bubbles and model selector dropdown with search functionality.
+Adapted for cross-platform compatibility with responsive sizing for mobile platforms.
 """
 import asyncio
 
 import flet as ft
 
 from src.ui.styles import AppStyles
+from src.utils.platform import is_mobile
 
 
 class MessageBubble(ft.Container):
@@ -100,8 +102,13 @@ class ModelSelector(ft.Dropdown):
         """
         super().__init__()
 
-        # Apply styles from configuration
-        for key, value in AppStyles.MODEL_DROPDOWN.items():
+        # Apply styles from configuration with mobile adaptation
+        dropdown_style = dict(AppStyles.MODEL_DROPDOWN)
+        if is_mobile():
+            # Remove fixed width on mobile, let it expand
+            dropdown_style.pop('width', None)
+        
+        for key, value in dropdown_style.items():
             setattr(self, key, value)
 
         self.label = None
@@ -121,11 +128,16 @@ class ModelSelector(ft.Dropdown):
         # Set initial value to first model
         self.value = models[0]['id'] if models else None
 
-        # Create search field for model filtering
+        # Create search field for model filtering with responsive width
+        search_field_style = dict(AppStyles.MODEL_SEARCH_FIELD)
+        if is_mobile():
+            # Remove fixed width on mobile, let it expand
+            search_field_style.pop('width', None)
+        
         self.search_field = ft.TextField(
             on_change=self.filter_options,
             hint_text="Поиск модели",
-            **AppStyles.MODEL_SEARCH_FIELD
+            **search_field_style
         )
 
     def filter_options(self, e):

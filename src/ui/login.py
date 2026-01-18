@@ -3,8 +3,11 @@ Login window UI component module.
 
 This module provides a login window component for authentication,
 supporting both first-time login with API key and PIN-based login.
+Adapted for cross-platform compatibility with responsive sizing for mobile platforms.
 """
 import flet as ft
+
+from src.utils.platform import is_mobile
 
 
 class LoginWindow:
@@ -34,22 +37,26 @@ class LoginWindow:
         self.is_first_login = is_first_login
 
         # Create API key input field (always visible)
+        # Use responsive width: fixed on desktop, expand on mobile
+        api_key_width = None if is_mobile() else 400
         self.api_key_input = ft.TextField(
             label="API Key",
             hint_text="Введите ключ OpenRouter API",
             password=True,
-            width=400,
-            expand=False,
+            width=api_key_width,
+            expand=is_mobile(),  # Expand on mobile, fixed width on desktop
             visible=True,  # Always visible
         )
 
         # Create PIN input field (visible when auth data exists)
+        # Use responsive width: fixed on desktop, expand on mobile
+        pin_width = None if is_mobile() else 200
         self.pin_input = ft.TextField(
             label="PIN",
             hint_text="Введите 4-значный PIN",
             password=True,
-            width=200,
-            expand=False,
+            width=pin_width,
+            expand=is_mobile(),  # Expand on mobile, fixed width on desktop
             max_length=4,
             visible=not is_first_login,  # Visible when not first login
         )
@@ -62,11 +69,12 @@ class LoginWindow:
             visible=False,
         )
 
-        # Login button
+        # Login button - use responsive width
+        login_button_width = None if is_mobile() else 150
         self.login_button = ft.ElevatedButton(
             text="Войти",
             icon=ft.icons.LOGIN,
-            width=150,
+            width=login_button_width,
         )
 
         # Reset button (only visible on PIN login)
@@ -143,10 +151,15 @@ class LoginWindow:
             spacing=0,
         )
 
+        # Use responsive container width: fixed on desktop, expand on mobile
+        container_width = None if is_mobile() else 500
+        container_padding = 20 if is_mobile() else 30  # Reduce padding on mobile
+        
         return ft.Container(
             content=content,
-            padding=30,
-            width=500,
+            padding=container_padding,
+            width=container_width,
+            expand=is_mobile(),  # Expand on mobile for full-width layout
             bgcolor=ft.Colors.GREY_900,
             border_radius=10,
             border=ft.border.all(1, ft.Colors.GREY_700),
